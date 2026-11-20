@@ -1,5 +1,5 @@
 /* Generado por construir-app.cjs. Cache-first: tras la primera visita funciona sin conexión. */
-const CACHE = 'caso-inima-c58228868c';
+const CACHE = 'caso-inima-5911a6d20f';
 const ARCHIVOS = [
   "./",
   "./app.js",
