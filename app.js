@@ -7,7 +7,9 @@
 (function () {
   'use strict';
 
-  var C = window.CASO, S = window.SIMBOLOS, K = window.CRIPTO;
+  var C = window.CASO, S = window.SIMBOLOS, K = window.CRIPTO, D = window.DIBUJOS;
+  // Orden FIJO y NO alfabético de los símbolos: si fuera A, B, C… la posición delataría la letra.
+  var ORDEN = ['Q', 'H', 'T', 'D', 'Ñ', 'A', 'X', 'C', 'M', 'U', 'F', 'R', 'I', 'Z', 'B', 'O', 'W', 'K', 'S', 'N', 'G', 'Y', 'E', 'V', 'P', 'L', 'J'];
   var CLAVE = 'caso-inima-v1';
   var TOTAL = C.sobres.length;
   var N_INTERRO = C.interroEn || (TOTAL - 1);
@@ -15,7 +17,7 @@
   /* ------------------------------------------------------------------ estado */
   function porDefecto() {
     return { nombre: '', introLeida: false, sellos: {}, notas: {}, marcas: {}, log: {},
-             pistasPedidas: {}, acusacion: null, resuelto: false, tab: 'caso' };
+             pistasPedidas: {}, hip: {}, acusacion: null, resuelto: false, tab: 'caso' };
   }
   function cargar() {
     try {
@@ -35,7 +37,7 @@
   var mem = {
     cargando: true, sobres: {}, interro: null, final: null,
     pistas: {}, trad: {}, abierto: undefined,
-    subCodice: 'alfabeto', desc: '', escr: '',
+    subCodice: 'alfabeto', desc: '', reciente: null,
     sosp: null, confesionVista: false, instalar: null, aviso: {}
   };
 
@@ -55,6 +57,35 @@
   }
   function sospechoso(id) { return C.sospechosos.filter(function (x) { return x.id === id; })[0]; }
   function reducido() { return window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; }
+
+  /* ----------------------------------- el alfabeto se APRENDE con los sellos */
+  // Letras que conoce: las de las palabras-sello ya abiertas (los sellos se guardan normalizados).
+  function aprendidas() {
+    var o = {};
+    Object.keys(estado.sellos).forEach(function (n) {
+      String(estado.sellos[n]).split('').forEach(function (l) { o[l] = true; });
+    });
+    return o;
+  }
+  // Qué letras enseñó el sello n: las suyas que no estaban en los sellos anteriores.
+  function ensenadas(n) {
+    var vistas = {}, nuevas = [], i;
+    for (i = 1; i < n; i++) if (estado.sellos[i]) String(estado.sellos[i]).split('').forEach(function (l) { vistas[l] = true; });
+    String(estado.sellos[n] || '').split('').forEach(function (l) { if (!vistas[l] && nuevas.indexOf(l) < 0) nuevas.push(l); });
+    return nuevas;
+  }
+  // Lo que se ve bajo un símbolo: su letra (si la ha aprendido), su hipótesis, o «?».
+  function letraVista(l, ap) {
+    ap = ap || aprendidas();
+    if (ap[l]) return { t: l, tipo: 'ok' };
+    if (estado.hip[l]) return { t: estado.hip[l], tipo: 'hip' };
+    return { t: '?', tipo: 'no' };
+  }
+  // SVG del símbolo SIN la letra escrita en sus atributos (no debe delatarse en el DOM accesible).
+  function glifo(l, tam, grosor) {
+    return S.svgLetra(l, { tam: tam, grosor: grosor || 7 })
+      .replace(/ data-letra="[^"]*"/, '').replace(/aria-label="[^"]*"/, 'aria-label="Símbolo"');
+  }
 
   var ICONO = {
     caso: '<svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 12h7M9 16h7"/></svg>',
@@ -175,6 +206,11 @@
 
     h += hoja('Cómo se juega', '<ol class="reglas">' + C.reglas.map(function (r) { return '<li>' + txt(r) + '</li>'; }).join('') + '</ol>');
 
+    h += hoja('El alfabeto del hospital',
+      '<p class="parrafo">En este hospital se escribe con un alfabeto secreto, y todavía no lo conoces. No hay chuleta: lo irás aprendiendo.</p>' +
+      '<p class="parrafo">Cada sobre trae un <b>sello</b>: un dibujo y, a su lado, su nombre escrito con esos símbolos. Escribe aquí cómo se llama el dibujo y tu <b>Códice</b> anotará las letras que acabas de aprender. ' +
+      'Cuando llegues al último sobre, con lo que sepas podrás leer el mensaje que lo cambia todo.</p>', 'hoja--alfabeto');
+
     h += hoja('Plano del hospital',
       '<p class="parrafo suave pequeno" style="margin-bottom:12px">Estas son las once salas. En verde, dónde está cada una en la casa.</p>' +
       '<div class="plano">' + C.salas.map(function (s) {
@@ -192,7 +228,7 @@
     } else {
       h += hoja('Ya puedes empezar',
         '<p class="parrafo"><b>Abre ahora el segundo papel del sobre 1</b>: el sobre pequeño que viene dentro del ramo. ' +
-        'Descifra la palabra que lleva en lo alto (el sello) y escríbela en la pestaña Expediente.</p>' +
+        'Mira el dibujo que lleva en lo alto (el sello) y escribe cómo se llama en la pestaña Expediente.</p>' +
         '<div class="fila-btn"><button class="btn btn--primario" data-acc="ir" data-tab="expediente">Ir al Expediente</button>' +
         '<button class="btn" data-acc="ir" data-tab="codice">Abrir el Códice</button></div>', 'hoja--aviso');
     }
@@ -210,67 +246,95 @@
     return h;
   }
 
-  // ---- Códice
-  function glifosPalabras(texto, tam) {
-    return S.normalizar(texto).split(/ +/).filter(Boolean).map(function (p) {
-      return '<span class="palabra">' + p.split('').filter(function (l) { return S.FORMAS[l]; })
-        .map(function (l) { return S.svgLetra(l, { tam: tam || 36, grosor: 7 }); }).join('') + '</span>';
-    }).join(' ');
+  // ---- Códice (se va rellenando con los sellos)
+  function htmlLectura() {
+    if (!mem.desc) return 'Aquí aparecerá lo que descifres.';
+    var ap = aprendidas();
+    return mem.desc.split('').map(function (c) {
+      if (c === ' ') return ' ';
+      var v = letraVista(c, ap);
+      return '<span class="l-' + v.tipo + '">' + esc(v.t) + '</span>';
+    }).join('');
   }
   function vCodice() {
-    var sub = mem.subCodice, c = '';
+    var sub = mem.subCodice === 'descifrar' ? 'descifrar' : 'alfabeto', ap = aprendidas(), nAp = Object.keys(ap).length, c = '';
     c += '<div class="pestanas-cod" role="group" aria-label="Herramientas del Códice">' +
-      [['alfabeto', 'Alfabeto'], ['descifrar', 'Descifrar'], ['escribir', 'Escribir']].map(function (p) {
+      [['alfabeto', 'Mis letras'], ['descifrar', 'Descifrar']].map(function (p) {
         return '<button data-acc="subcod" data-sub="' + p[0] + '" aria-pressed="' + (sub === p[0]) + '">' + p[1] + '</button>';
       }).join('') + '</div>';
 
     if (sub === 'alfabeto') {
-      c += '<p class="parrafo suave pequeno" style="margin-bottom:12px">Cada símbolo es una letra. Los espacios separan palabras.</p><div class="alfabeto">' +
-        S.LETRAS.map(function (l) {
-          return '<div class="alfabeto__celda">' + S.svgLetra(l, { tam: 44, grosor: 6.5 }) + '<b>' + l + '</b></div>';
+      c += '<p class="parrafo pequeno" style="margin-bottom:6px"><b>Has aprendido ' + nAp + ' de ' + S.LETRAS.length + ' letras.</b> ' +
+        (nAp ? 'Cada sello nuevo te enseña las letras de su nombre.' : 'Todavía no conoces ninguna: cada sello te enseñará las letras del nombre de su dibujo.') + '</p>' +
+        '<p class="parrafo suave pequeno" style="margin-bottom:12px">Si crees saber qué letra es un símbolo, anótalo debajo: es solo una hipótesis tuya y se verá punteada.</p>' +
+        '<div class="alfabeto">' + ORDEN.map(function (l) {
+          var v = letraVista(l, ap);
+          var pie = v.tipo === 'ok'
+            ? '<b class="l-ok">' + esc(v.t) + '</b>'
+            : '<input class="hip-in" type="text" data-hip="' + l + '" value="' + esc(estado.hip[l] || '') + '" maxlength="1" placeholder="?" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Tu hipótesis para este símbolo">';
+          return '<div class="alfabeto__celda alfabeto__celda--' + (v.tipo === 'ok' ? 'ok' : 'no') + '">' + glifo(l, 44, 6.5) + pie + '</div>';
         }).join('') + '</div>';
-    } else if (sub === 'descifrar') {
-      c += '<p class="parrafo suave pequeno" style="margin-bottom:10px">Toca los símbolos tal y como aparecen en el papel y verás qué letras son.</p>' +
-        '<div class="lectura' + (mem.desc ? '' : ' lectura--vacia') + '" id="lectura" aria-live="polite">' + (mem.desc ? esc(mem.desc) : 'Aquí aparecerá lo que descifres.') + '</div>' +
-        '<div class="teclado" role="group" aria-label="Símbolos">' + S.LETRAS.map(function (l) {
-          return '<button class="tecla" data-acc="tecla" data-l="' + l + '">' + S.svgLetra(l, { tam: 34, grosor: 7 }) + '</button>';
+    } else {
+      c += '<p class="parrafo suave pequeno" style="margin-bottom:10px">Toca los símbolos tal y como aparecen en el papel. Verás las letras que ya conoces; las demás, con «?».</p>' +
+        '<div class="lectura' + (mem.desc ? '' : ' lectura--vacia') + '" id="lectura" aria-live="polite">' + htmlLectura() + '</div>' +
+        '<div class="teclado" role="group" aria-label="Símbolos">' + ORDEN.map(function (l) {
+          return '<button class="tecla" data-acc="tecla" data-l="' + l + '" aria-label="Símbolo">' + glifo(l, 34, 7) + '</button>';
         }).join('') + '</div>' +
         '<div class="teclado-acc"><button class="btn" data-acc="espacio">Espacio</button><button class="btn" data-acc="borrar">Borrar</button><button class="btn" data-acc="vaciar">Vaciar</button></div>';
-    } else {
-      c += '<p class="parrafo suave pequeno" style="margin-bottom:10px">Escribe con letras normales y mira cómo queda en símbolos.</p>' +
-        '<label class="campo" for="escr" style="margin-top:0">Tu texto</label>' +
-        '<textarea id="escr" maxlength="200" spellcheck="false" placeholder="Escribe aquí…">' + esc(mem.escr) + '</textarea>' +
-        '<div class="salida-simbolos" id="salidaSimbolos" aria-live="polite">' + glifosPalabras(mem.escr) + '</div>';
     }
     return hoja('Códice del hospital', c);
   }
 
   // ---- Expediente
-  function lineasGlifos(d) {
-    var rojo = d.tipo === 'acrostico';
-    return d.lineas.map(function (l) {
-      var pal = S.limpiar(l).split(' ');
-      return '<div class="linea">' + pal.map(function (p, pi) {
-        return '<span class="palabra">' + p.split('').map(function (letra, li) {
-          var r = rojo && pi === 0 && li === 0;
-          return '<button class="g' + (r ? ' g--roja' : '') + '" data-acc="glifo" data-l="' + letra + '" aria-label="Símbolo. Toca para ver su letra.">' +
-            S.svgLetra(letra, { tam: 31, grosor: 7 }) + '<span class="g__l" aria-hidden="true"></span></button>';
-        }).join('') + '</span>';
-      }).join('') + '</div>';
-    }).join('');
+  // Un símbolo tocable (mensaje cifrado): muestra la letra aprendida, la hipótesis o «?».
+  function celdaGlifo(letra, ap) {
+    var v = letraVista(letra, ap);
+    return '<button class="g g--' + v.tipo + '" data-acc="hipotesis" data-l="' + letra + '" aria-label="Símbolo. ' +
+      (v.tipo === 'ok' ? 'Es la letra ' + v.t + '.' : 'Toca para anotar tu hipótesis.') + '">' +
+      glifo(letra, 31, 7) + '<span class="g__l">' + esc(v.t) + '</span></button>';
   }
-  function glifosSello(sello) {
-    return '<span class="sello-glifos">' + sello.split('').map(function (l) { return S.svgLetra(l, { tam: 22, grosor: 8 }); }).join('') + '</span>';
+  function htmlMensaje(d) {
+    var ap = aprendidas();
+    return '<div class="acertijo acertijo--cifrado"><div class="acertijo__lineas">' + d.lineas.map(function (l) {
+      return '<div class="linea">' + S.limpiar(l).split(' ').filter(Boolean).map(function (p) {
+        return '<span class="palabra">' + p.split('').map(function (x) { return celdaGlifo(x, ap); }).join('') + '</span>';
+      }).join('') + '</div>';
+    }).join('') + '</div></div>';
+  }
+  function htmlVersos(d) {
+    var acros = d.tipo === 'acrostico';
+    return '<div class="versos">' + d.lineas.map(function (l) {
+      var t = String(l);
+      return (acros && t.length)
+        ? '<p class="verso"><span class="ini">' + esc(t.charAt(0)) + '</span>' + esc(t.slice(1)) + '</p>'
+        : '<p class="verso">' + esc(t) + '</p>';
+    }).join('') + '</div>';
+  }
+  // El sello: el dibujo + su nombre en símbolos (con la letra aprendida debajo de cada uno).
+  function htmlSello(n) {
+    var ap = aprendidas(), palabra = String(estado.sellos[n]), nuevas = ensenadas(n);
+    var h = '<div class="sello-papel"><div class="dibujo-caja">' + D.svgDibujo(C.sobres[n - 1].dibujo, { tam: 92, grosor: 3.4 }) + '</div>' +
+      '<div class="sello-nombre"><span class="palabra palabra--sello">' + palabra.split('').map(function (l) {
+        return '<span class="gl">' + glifo(l, 30, 7.5) + '<span class="g__l">' + esc(letraVista(l, ap).t) + '</span></span>';
+      }).join('') + '</span><span class="sello-goma">Archivado</span></div></div>';
+    h += '<div class="aprendido' + (mem.reciente === n && !reducido() ? ' aprendido--nuevo' : '') + '"><b>Este sello te ha enseñado:</b> ' +
+      (nuevas.length ? nuevas.map(function (l) { return '<span class="apr-l">' + glifo(l, 22, 8) + '<b>' + esc(l) + '</b></span>'; }).join('')
+        : '<span class="suave">ninguna letra nueva</span>') + '</div>';
+    return h;
   }
   function htmlSobreAbierto(n) {
     var d = mem.sobres[n], h = '';
     if (n === 1) h += '<p class="nota-papel">Este es el <b>segundo papel del sobre pequeño</b> que venía dentro del ramo. Ya puedes tenerlo en la mano.</p>';
-    h += '<div class="fila-sello"><span class="sello-goma">Archivado</span>' + glifosSello(CRIPTO_norm(estado.sellos[n])) + '</div>';
+    h += htmlSello(n);
     h += '<div class="prueba"><h3>' + txt(d.prueba.titulo) + '</h3><p>' + txt(d.prueba.texto) + '</p></div>';
-    h += '<h3 class="sub-m">Acertijo</h3>';
-    if (d.tipo === 'espejo') h += '<p class="nota-papel">Este papel está escrito para leerse en un espejo. Ponlo frente al cristal.</p>';
-    h += '<div class="acertijo' + (d.tipo === 'espejo' ? ' espejo' : '') + '"><div class="acertijo__lineas">' + lineasGlifos(d) + '</div></div>';
-    if (d.tipo === 'acrostico') h += '<p class="pequeno suave" style="margin-top:6px">Fíjate en los símbolos en rojo.</p>';
+    if (d.cifrado) {
+      h += '<h3 class="sub-m">Mensaje cifrado</h3>' +
+        '<p class="pequeno suave" style="margin-bottom:6px">Escrito en el alfabeto del hospital. Lo que ya has aprendido se lee solo; toca un símbolo desconocido para anotar tu hipótesis.</p>' +
+        htmlMensaje(d);
+    } else {
+      h += '<h3 class="sub-m">Acertijo</h3>' + htmlVersos(d);
+      if (d.tipo === 'acrostico') h += '<p class="pequeno suave" style="margin-top:6px">Fíjate en las letras en rojo.</p>';
+    }
 
     var pedidas = estado.pistasPedidas[n] || 0;
     h += '<h3 class="sub-m">¿Atascada?</h3><div class="pistas">';
@@ -279,7 +343,8 @@
       var bloq = i > pedidas;
       h += '<button class="btn" data-acc="pista" data-n="' + n + '" data-i="' + i + '"' + (bloq ? ' disabled' : '') + '>Pista ' + (i + 1) + (vista ? ' ' + ICONO.ok : '') + '</button>';
     }
-    h += '</div><div class="fila-btn"><button class="btn btn--completo" data-acc="trad" data-n="' + n + '">Traducción completa</button></div>';
+    h += '</div>';
+    if (d.cifrado) h += '<div class="fila-btn"><button class="btn btn--completo" data-acc="trad" data-n="' + n + '">Traducción completa</button></div>';
     for (var j = 0; j < 3; j++) {
       if (mem.pistas[n + ':' + j] !== undefined) h += '<div class="pista-visible"><b>Pista ' + (j + 1) + '</b>' + txt(mem.pistas[n + ':' + j]) + '</div>';
     }
@@ -288,7 +353,6 @@
     h += '<label class="campo" for="nota' + n + '">Mis notas</label><textarea id="nota' + n + '" data-nota="' + n + '" placeholder="Apunta aquí tus sospechas…">' + esc(estado.notas[n] || '') + '</textarea>';
     return h;
   }
-  function CRIPTO_norm(s) { return K.normalizarSello(s); }
 
   function vExpediente() {
     if (mem.cargando) return hoja('Expediente', '<p class="parrafo">Descifrando el expediente…</p>');
@@ -297,7 +361,7 @@
       var max = 0; for (var n0 in mem.sobres) max = Math.max(max, +n0);
       mem.abierto = max || sig;
     }
-    var h = '<p class="parrafo suave" style="margin:6px 2px 4px">Cada sobre lleva arriba una palabra en símbolos: su sello. Descífrala y escríbela para guardar la prueba en tu expediente.</p>';
+    var h = '<p class="parrafo suave" style="margin:6px 2px 4px">Cada sobre lleva arriba un dibujo y su nombre escrito en símbolos: su sello. Escribe cómo se llama el dibujo y tu Códice aprenderá esas letras.</p>';
     var lista = '';
     C.sobres.forEach(function (s) {
       var n = s.n, d = mem.sobres[n], abierto = !!d, esSig = n === sig, plegado = mem.abierto !== n;
@@ -314,10 +378,10 @@
             '<div class="fila-btn"><button class="btn btn--primario" data-acc="ir" data-tab="caso">Volver al Caso</button></div>';
         } else {
           cuerpo = '<p class="parrafo">' + (n === 1
-            ? 'Abre el <b>segundo papel del sobre pequeño</b> del ramo. En lo alto verás una palabra en símbolos: es su sello.'
-            : 'Cuando encuentres el sobre ' + n + ', descifra la palabra en símbolos que lleva en lo alto: es su sello.') + '</p>' +
+            ? 'Abre el <b>segundo papel del sobre pequeño</b> del ramo. En lo alto verás un dibujo y su nombre en símbolos: es su sello.'
+            : 'Cuando encuentres el sobre ' + n + ', mira el dibujo que lleva en lo alto: es su sello. Escribe cómo se llama.') + '</p>' +
             '<form class="bloque-sello" data-form="sello" data-n="' + n + '" autocomplete="off">' +
-            '<label class="campo" for="sello' + n + '">Escribe el sello del sobre ' + n + '</label>' +
+            '<label class="campo" for="sello' + n + '">Escribe el nombre del dibujo del sello</label>' +
             '<input id="sello' + n + '" class="entrada-sello" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="go">' + msg +
             '<button type="submit" class="btn btn--primario btn--completo">Guardar en el expediente</button></form>';
         }
@@ -475,19 +539,19 @@
   /* ------------------------------------------------------------------ acciones */
   async function probarSello(n, texto) {
     var norm = K.normalizarSello(texto);
-    if (!norm) { mem.aviso[n] = 'Escribe la palabra que has descifrado.'; return render(); }
+    if (!norm) { mem.aviso[n] = 'Escribe el nombre del dibujo.'; return render(); }
     var coincide = null;
     for (var i = 0; i < C.sobres.length; i++) {
       var s = C.sobres[i].sello;
       if (await K.hash(norm, s.sal) === s.h) { coincide = C.sobres[i].n; break; }
     }
-    if (coincide === null) mem.aviso[n] = 'Ese sello no corresponde a ningún sobre. Revisa el descifrado letra a letra.';
+    if (coincide === null) mem.aviso[n] = 'Esa no es la palabra. El nombre del dibujo tiene ' + C.sobres[n - 1].sello.len + ' símbolos.';
     else if (coincide < n) mem.aviso[n] = 'Ese sello ya lo tienes guardado (sobre ' + coincide + ').';
     else if (coincide > n) mem.aviso[n] = 'Ese sello no es el del siguiente sobre.';
     else {
       try {
         await abrirSobre(n, norm);
-        estado.sellos[n] = norm; mem.aviso[n] = ''; mem.abierto = n; guardar();
+        estado.sellos[n] = norm; mem.aviso[n] = ''; mem.abierto = n; mem.reciente = n; guardar();
         render(); latidoFuerte();
         var el = document.querySelector('.sobre--abierto:not(.sobre--plegado)');
         if (el && el.scrollIntoView) el.scrollIntoView({ block: 'start', behavior: reducido() ? 'auto' : 'smooth' });
@@ -507,6 +571,29 @@
     mem.pistas[n + ':' + i] = r;
     estado.pistasPedidas[n] = Math.max(estado.pistasPedidas[n] || 0, i + 1); guardar();
     render();
+  }
+  // Anotar una hipótesis sobre un símbolo desconocido (solo es una nota suya; no revela nada).
+  function pedirHipotesis(l) {
+    if (aprendidas()[l]) return;
+    var d = $('modal');
+    function guardarHip(v) {
+      v = S.limpiar(v || '').replace(/ /g, '').slice(0, 1);
+      if (v) estado.hip[l] = v; else delete estado.hip[l];
+      guardar(); render();
+    }
+    if (!d.showModal) { var r = window.prompt('¿Qué letra crees que es este símbolo?', estado.hip[l] || ''); if (r !== null) guardarHip(r); return; }
+    d.innerHTML =
+      '<form id="fHip" autocomplete="off">' +
+      '<h2>Tu hipótesis</h2><p class="suave">Un símbolo que todavía no conoces:</p>' +
+      '<div class="hip-gl">' + glifo(l, 64, 6.5) + '</div>' +
+      '<label class="campo" for="inHip">¿Qué letra crees que es?</label>' +
+      '<input id="inHip" type="text" maxlength="1" value="' + esc(estado.hip[l] || '') + '" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="done">' +
+      '<div class="fila-btn"><button type="button" class="btn" id="quitHip">Quitar</button>' +
+      '<button type="submit" class="btn btn--primario">Anotar</button></div></form>';
+    $('quitHip').onclick = function () { d.close(); guardarHip(''); };
+    $('fHip').onsubmit = function (ev) { ev.preventDefault(); var v = $('inHip').value; d.close(); guardarHip(v); };
+    d.showModal();
+    $('inHip').focus();
   }
   async function pedirTraduccion(n) {
     var r = await pedirPassword({
@@ -566,14 +653,11 @@
       case 'reiniciar': pedirAutor('Esto borra toda la partida de este móvil.', reiniciar); break;
       case 'subcod': mem.subCodice = d.sub; render(); break;
       case 'tecla': mem.desc += d.l; actualizarLectura(); break;
+      case 'hipotesis': pedirHipotesis(d.l); break;
       case 'espacio': if (mem.desc && mem.desc.slice(-1) !== ' ') mem.desc += ' '; actualizarLectura(); break;
       case 'borrar': mem.desc = mem.desc.slice(0, -1); actualizarLectura(); break;
       case 'vaciar': mem.desc = ''; actualizarLectura(); break;
       case 'plegar': mem.abierto = (mem.abierto === +d.n) ? null : +d.n; render(); break;
-      case 'glifo':
-        var cap = el.querySelector('.g__l');
-        if (el.classList.toggle('visto')) cap.textContent = d.l; else cap.textContent = '';
-        break;
       case 'pista': pedirPista(+d.n, +d.i); break;
       case 'trad': pedirTraduccion(+d.n); break;
       case 'marca': estado.marcas[d.id] = d.m; guardar(); render(); break;
@@ -592,7 +676,7 @@
   }
   function actualizarLectura() {
     var l = $('lectura'); if (!l) return;
-    l.textContent = mem.desc || 'Aquí aparecerá lo que descifres.';
+    l.innerHTML = htmlLectura();
     l.classList.toggle('lectura--vacia', !mem.desc);
   }
   document.addEventListener('submit', function (e) {
@@ -604,8 +688,12 @@
   });
   document.addEventListener('input', function (e) {
     var t = e.target;
-    if (t.id === 'escr') { mem.escr = t.value; $('salidaSimbolos').innerHTML = glifosPalabras(mem.escr); }
-    else if (t.dataset && t.dataset.nota) { estado.notas[t.dataset.nota] = t.value; guardar(); }
+    if (t.dataset && t.dataset.hip) {
+      var v = S.limpiar(t.value).replace(/ /g, '').slice(-1);
+      t.value = v;
+      if (v) estado.hip[t.dataset.hip] = v; else delete estado.hip[t.dataset.hip];
+      guardar();
+    } else if (t.dataset && t.dataset.nota) { estado.notas[t.dataset.nota] = t.value; guardar(); }
   });
   window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); mem.instalar = e; if (estado.tab === 'caso') render(); });
 

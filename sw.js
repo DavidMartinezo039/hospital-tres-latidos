@@ -1,10 +1,11 @@
 /* Generado por construir-app.cjs. Cache-first: tras la primera visita funciona sin conexión. */
-const CACHE = 'caso-inima-30571b8ac1';
+const CACHE = 'caso-inima-0665fe3573';
 const ARCHIVOS = [
   "./",
   "./app.js",
   "./cripto.js",
   "./datos.js",
+  "./dibujos.js",
   "./estilos.css",
   "./fuentes/atkinson-hyperlegible-latin-400-normal.woff2",
   "./fuentes/atkinson-hyperlegible-latin-700-normal.woff2",
