@@ -1,0 +1,396 @@
+/* ==========================================================================
+   Caso Inimă · historia clínica del Hospital Tres Latidos
+   Papel clínico + tinta azul marino (el color del bolígrafo del alfabeto).
+   Lo memorable: el monitor de electrocardiograma de la cabecera.
+   ========================================================================== */
+
+@font-face { font-family: "Special Elite"; font-weight: 400; font-style: normal; font-display: swap;
+  src: url("fuentes/special-elite-latin-400-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Special Elite"; font-weight: 400; font-style: normal; font-display: swap;
+  src: url("fuentes/special-elite-latin-ext-400-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Atkinson Hyperlegible"; font-weight: 400; font-style: normal; font-display: swap;
+  src: url("fuentes/atkinson-hyperlegible-latin-400-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Atkinson Hyperlegible"; font-weight: 400; font-style: normal; font-display: swap;
+  src: url("fuentes/atkinson-hyperlegible-latin-ext-400-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+@font-face { font-family: "Atkinson Hyperlegible"; font-weight: 700; font-style: normal; font-display: swap;
+  src: url("fuentes/atkinson-hyperlegible-latin-700-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+@font-face { font-family: "Atkinson Hyperlegible"; font-weight: 700; font-style: normal; font-display: swap;
+  src: url("fuentes/atkinson-hyperlegible-latin-ext-700-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF; }
+
+:root {
+  --papel: #EEF3F0;
+  --hoja: #F9FBFA;
+  --tinta: #1D2A5B;
+  --tinta-suave: #475180;
+  --hospital: #1F7A74;
+  --hospital-osc: #17625D;
+  --corazon: #D63A4F;
+  --corazon-osc: #B02A3F;
+  --marcador: #F2C94C;
+  --linea: rgba(29, 42, 91, .22);
+  --linea-fuerte: rgba(29, 42, 91, .55);
+
+  --maquina: "Special Elite", "Courier New", Courier, monospace;
+  --cuerpo: "Atkinson Hyperlegible", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --alto-barra: 68px;
+  --ancho: 720px;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--papel);
+  color: var(--tinta);
+  font-family: var(--cuerpo);
+  font-size: 17px;
+  line-height: 1.55;
+  -webkit-tap-highlight-color: transparent;
+}
+body.sin-scroll { overflow: hidden; }
+
+h1, h2, h3, p, ul, ol { margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--hospital); outline-offset: 2px; }
+.monitor :focus-visible, .barra :focus-visible, .btn--primario:focus-visible { outline-color: var(--marcador); }
+
+.saltar { position: absolute; left: -999px; top: 0; background: var(--marcador); color: var(--tinta); padding: 10px 14px; z-index: 100; }
+.saltar:focus { left: 8px; top: 8px; }
+
+/* ---------------------------------------------------------------- monitor */
+.monitor {
+  position: sticky; top: 0; z-index: 20;
+  background: var(--tinta);
+  color: #EAF0EE;
+  padding-top: env(safe-area-inset-top);
+  border-bottom: 3px solid var(--corazon);
+}
+.monitor__fila {
+  max-width: var(--ancho); margin: 0 auto;
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 12px;
+  padding: 10px 16px 0;
+}
+.monitor__hospital { display: block; font-size: 13px; color: #B9C6D6; }
+.monitor__caso { font-family: var(--maquina); font-weight: 400; font-size: 27px; line-height: 1.1; }
+.monitor__cuenta { font-family: var(--maquina); font-size: 14px; color: #B9C6D6; padding-bottom: 3px; text-align: right; }
+.monitor__cuenta b { font-weight: 400; color: #fff; }
+
+.ecg {
+  --w: 368px;
+  position: relative; height: 46px; overflow: hidden;
+  max-width: var(--ancho); margin: 0 auto;
+  color: #9FE3D2;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 7%, #000 93%, transparent 100%);
+          mask-image: linear-gradient(90deg, transparent 0, #000 7%, #000 93%, transparent 100%);
+  transform-origin: 50% 61%;
+  transition: transform .22s ease-out, color .22s ease-out, filter .22s ease-out;
+}
+.ecg svg { display: block; height: 46px; width: calc(var(--w) * 3); animation: ecg-corre 4.6s linear infinite; }
+.ecg path { fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.ecg.fuerte { transform: scaleY(1.55); color: #FF8095; filter: drop-shadow(0 0 5px rgba(255, 110, 130, .85)); }
+@keyframes ecg-corre { to { transform: translateX(calc(var(--w) * -1)); } }
+
+/* ---------------------------------------------------------------- pantalla */
+#pantalla {
+  max-width: var(--ancho); margin: 0 auto;
+  padding: 14px 14px calc(var(--alto-barra) + 28px + env(safe-area-inset-bottom));
+  outline: none;
+}
+
+/* hoja = carpeta con pestaña */
+.hoja {
+  position: relative;
+  margin: 36px 0 18px;
+  padding: 22px 16px 18px;
+  background: var(--hoja);
+  border: 1.5px solid var(--tinta);
+  border-radius: 0 6px 6px 6px;
+}
+.hoja:first-child { margin-top: 30px; }
+.hoja > .pestana {
+  position: absolute; left: -1.5px; top: -30px;
+  font-family: var(--maquina); font-weight: 400; font-size: 16px; line-height: 1;
+  background: var(--tinta); color: #F3F7F5;
+  padding: 8px 14px 7px; border-radius: 7px 7px 0 0;
+  max-width: calc(100% - 30px);
+}
+.hoja--aviso { background: #FFF8DC; border-color: #A98200; }
+.hoja--aviso > .pestana { background: #8A6A00; }
+
+.titulo-m { font-family: var(--maquina); font-weight: 400; font-size: 22px; line-height: 1.25; margin-bottom: 8px; }
+.sub-m { font-family: var(--maquina); font-weight: 400; font-size: 18px; line-height: 1.3; margin: 18px 0 6px; }
+.suave { color: var(--tinta-suave); }
+.pequeno { font-size: 15px; }
+.parrafo + .parrafo { margin-top: 12px; }
+.parrafo--apertura { font-family: var(--maquina); font-size: 19px; line-height: 1.4; }
+
+/* reglas: aquí sí hay secuencia */
+.reglas { list-style: none; padding: 0; counter-reset: regla; display: grid; gap: 12px; }
+.reglas li { counter-increment: regla; position: relative; padding-left: 40px; }
+.reglas li::before {
+  content: counter(regla);
+  position: absolute; left: 0; top: 1px; width: 28px; height: 28px; border-radius: 50%;
+  border: 1.5px solid var(--tinta); display: grid; place-items: center;
+  font-family: var(--maquina); font-size: 15px; background: var(--papel);
+}
+
+/* plano: placas de puerta */
+.plano { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; }
+.placa-puerta {
+  position: relative; padding: 10px 12px 10px; background: var(--papel);
+  border: 1.5px solid var(--linea-fuerte); border-radius: 4px 4px 4px 14px;
+  display: grid; gap: 2px; align-content: start; min-height: 86px;
+}
+.placa-puerta::before, .placa-puerta::after {
+  content: ""; position: absolute; top: 6px; width: 5px; height: 5px; border-radius: 50%; background: var(--linea-fuerte);
+}
+.placa-puerta::before { right: 8px; } .placa-puerta::after { right: 18px; }
+.placa-puerta__nombre { font-family: var(--maquina); font-size: 16px; line-height: 1.2; padding-right: 26px; }
+.placa-puerta__real { font-size: 14px; color: var(--hospital-osc); }
+.placa-puerta__nota { font-size: 13px; color: var(--tinta-suave); line-height: 1.35; }
+.placa-puerta__glifo { position: absolute; right: 8px; bottom: 6px; color: var(--tinta); }
+
+/* ---------------------------------------------------------------- botones y campos */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  min-height: 48px; padding: 10px 18px;
+  border: 2px solid var(--tinta); border-radius: 5px; background: transparent; color: var(--tinta);
+  font-weight: 700; font-size: 16px; line-height: 1.2; text-align: center;
+  transition: background .15s, color .15s, transform .1s;
+}
+.btn:hover { background: rgba(29, 42, 91, .08); }
+.btn:active { transform: translateY(1px); }
+.btn--primario { background: var(--tinta); color: #F3F7F5; }
+.btn--primario:hover { background: #26377A; }
+.btn--corazon { background: var(--corazon-osc); border-color: var(--corazon-osc); color: #fff; }
+.btn--corazon:hover { background: #961F33; }
+.btn--completo { width: 100%; }
+.btn[disabled], .btn[aria-disabled="true"] { opacity: .45; cursor: not-allowed; transform: none; }
+.btn--enlace { border: 0; min-height: 44px; padding: 8px 6px; text-decoration: underline; text-underline-offset: 3px; }
+.fila-btn { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+.campo { display: block; font-family: var(--maquina); font-size: 16px; margin: 14px 0 6px; }
+input[type="text"], input[type="password"], select, textarea {
+  width: 100%; min-height: 48px; padding: 10px 12px;
+  background: #fff; border: 2px solid var(--tinta); border-radius: 5px;
+  font-size: 18px;
+}
+textarea { min-height: 96px; resize: vertical; line-height: 1.45; font-size: 17px; }
+.entrada-sello { text-transform: uppercase; letter-spacing: .08em; font-family: var(--maquina); font-size: 20px; }
+.mensaje { margin-top: 10px; font-weight: 700; font-size: 16px; }
+.mensaje--error { color: var(--corazon-osc); }
+.mensaje--ok { color: var(--hospital-osc); }
+
+/* ---------------------------------------------------------------- símbolos */
+.glifo { display: block; }
+.alfabeto { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+.alfabeto__celda {
+  display: grid; justify-items: center; gap: 2px; padding: 8px 4px 6px;
+  background: var(--papel); border: 1.5px solid var(--linea); border-radius: 4px; color: var(--tinta);
+}
+.alfabeto__celda b { font-family: var(--maquina); font-weight: 400; font-size: 18px; line-height: 1; }
+
+.pestanas-cod { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 14px; }
+.pestanas-cod button {
+  min-height: 46px; border: 2px solid var(--tinta); background: transparent; border-radius: 5px; font-weight: 700; font-size: 15px;
+}
+.pestanas-cod button[aria-pressed="true"] { background: var(--tinta); color: #F3F7F5; }
+
+.lectura {
+  min-height: 78px; padding: 12px 14px; background: #fff; border: 2px solid var(--tinta); border-radius: 5px;
+  font-family: var(--maquina); font-size: 26px; line-height: 1.3; letter-spacing: .04em; word-break: break-word;
+}
+.lectura--vacia { color: var(--tinta-suave); font-size: 17px; letter-spacing: 0; }
+.teclado { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 12px; }
+.tecla {
+  min-height: 56px; display: grid; place-items: center;
+  background: var(--papel); border: 1.5px solid var(--linea-fuerte); border-radius: 5px; color: var(--tinta);
+}
+.tecla:active { background: var(--marcador); }
+.teclado-acc { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 6px; margin-top: 8px; }
+.salida-simbolos { margin-top: 14px; padding: 12px; background: #fff; border: 2px solid var(--tinta); border-radius: 5px; min-height: 72px; color: var(--tinta); }
+.salida-simbolos .palabra { margin: 0 12px 6px 0; }
+.salida-simbolos .glifo { width: 36px; height: 36px; }
+
+/* acertijo: símbolos tocables */
+.acertijo { background: #fff; border: 1.5px solid var(--linea-fuerte); border-radius: 4px; padding: 10px 6px 8px; overflow: hidden; }
+.acertijo__lineas { display: grid; gap: 0; }
+/* Cada verso del acertijo es una banda propia: si no cabe en una fila, sus filas quedan juntas. */
+.linea { display: flex; flex-wrap: wrap; gap: 0 24px; padding: 9px 0; }
+.linea + .linea { border-top: 1.5px dashed var(--linea-fuerte); }
+.palabra { display: inline-flex; flex-wrap: wrap; }
+.g {
+  position: relative; width: 34px; min-height: 48px; padding: 3px 0 0;
+  display: grid; grid-template-rows: 32px 14px; justify-items: center; align-items: start;
+  background: transparent; border: 0; border-radius: 4px; color: var(--tinta);
+}
+.g .glifo { width: 31px; height: 31px; }
+.g:active { background: rgba(242, 201, 76, .45); }
+.g--roja { color: var(--corazon); }
+.g__l { font-family: var(--maquina); font-size: 14px; line-height: 14px; color: var(--hospital-osc); }
+.g.visto { background: rgba(31, 122, 116, .1); }
+.espejo .acertijo__lineas { transform: scaleX(-1); }
+.espejo .g__l { display: inline-block; transform: scaleX(-1); }
+.nota-papel { margin-bottom: 10px; padding: 8px 12px; background: #FFF8DC; border-left: 4px solid var(--marcador); font-size: 15px; }
+
+/* ---------------------------------------------------------------- sobres */
+.sobre { border: 1.5px solid var(--linea-fuerte); border-radius: 5px; background: var(--hoja); margin-bottom: 10px; }
+.sobre--bloqueado { background: transparent; border-style: dashed; border-color: var(--linea); color: var(--tinta-suave); }
+.sobre--siguiente { border-color: var(--tinta); border-width: 2px; background: #fff; }
+.sobre__cab {
+  width: 100%; display: flex; align-items: center; gap: 12px; text-align: left; min-height: 56px; padding: 10px 12px;
+  background: transparent; border: 0; color: inherit;
+}
+.sobre__cab[disabled] { cursor: default; }
+.sobre__num {
+  flex: none; width: 38px; height: 38px; display: grid; place-items: center; border-radius: 50%;
+  border: 1.5px solid currentColor; font-family: var(--maquina); font-size: 18px;
+}
+.sobre--abierto .sobre__num { background: var(--hospital); border-color: var(--hospital); color: #fff; }
+.sobre__txt { flex: 1; min-width: 0; }
+.sobre__nom { font-family: var(--maquina); font-size: 18px; line-height: 1.2; }
+.sobre__est { font-size: 14px; color: var(--tinta-suave); }
+.sobre__flecha { flex: none; transition: transform .2s; }
+.sobre--plegado .sobre__flecha { transform: rotate(-90deg); }
+.sobre__cuerpo { padding: 2px 12px 14px; }
+.sobre--plegado .sobre__cuerpo { display: none; }
+
+.sello-goma {
+  display: inline-block; transform: rotate(-4deg);
+  font-family: var(--maquina); font-size: 15px; line-height: 1;
+  color: var(--corazon-osc); border: 2.5px solid var(--corazon-osc); border-radius: 5px; padding: 5px 9px 4px;
+  opacity: .88;
+}
+.fila-sello { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 4px 0 6px; }
+.sello-glifos { display: inline-flex; gap: 2px; color: var(--tinta); }
+.sello-glifos .glifo { width: 22px; height: 22px; }
+.prueba { margin-top: 10px; padding: 12px 12px 12px 14px; background: var(--papel); border-left: 4px solid var(--hospital); }
+.prueba h3 { font-family: var(--maquina); font-weight: 400; font-size: 18px; margin-bottom: 4px; }
+
+.pistas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-top: 8px; }
+.pistas .btn { padding: 8px 6px; font-size: 15px; }
+.pista-visible { margin-top: 10px; padding: 10px 12px; background: #FFF8DC; border: 1.5px solid #C9A227; border-radius: 4px; font-size: 16px; }
+.pista-visible b { font-family: var(--maquina); font-weight: 400; display: block; margin-bottom: 2px; }
+.traduccion { font-family: var(--maquina); font-size: 18px; line-height: 1.45; white-space: pre-line; }
+
+.bloque-sello { margin-top: 4px; }
+.bloque-sello .btn { margin-top: 10px; }
+
+/* ---------------------------------------------------------------- sospechosos */
+.sosp {
+  display: grid; grid-template-columns: 76px 1fr; gap: 6px 14px; align-items: start;
+  padding: 12px; margin-bottom: 12px; background: var(--hoja); border: 1.5px solid var(--linea-fuerte); border-radius: 5px;
+}
+.sosp__cara { width: 76px; height: 76px; }
+.sosp__nom { font-family: var(--maquina); font-size: 20px; line-height: 1.2; }
+.sosp__rol { font-size: 14px; color: var(--hospital-osc); font-weight: 700; }
+.sosp__desc { font-size: 15px; margin-top: 4px; color: var(--tinta); }
+.sosp__pie { grid-column: 1 / -1; display: grid; gap: 10px; }
+.sosp--descartado .sosp__nom { text-decoration: line-through; text-decoration-thickness: 2px; color: var(--tinta-suave); }
+.sosp--descartado .sosp__cara { opacity: .45; filter: grayscale(.6); }
+.sosp--sospechoso { border-color: var(--corazon-osc); border-width: 2px; box-shadow: inset 4px 0 0 var(--corazon); }
+.marcas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
+.marcas button {
+  min-height: 44px; font-size: 14px; font-weight: 700; padding: 4px 2px; border-radius: 4px;
+  background: transparent; border: 1.5px solid var(--linea-fuerte);
+}
+.marcas button[aria-pressed="true"] { background: var(--tinta); color: #F3F7F5; border-color: var(--tinta); }
+.marcas button.m-sosp[aria-pressed="true"] { background: var(--corazon-osc); border-color: var(--corazon-osc); }
+
+.bloqueo { display: flex; gap: 12px; align-items: flex-start; padding: 12px; background: #FFF8DC; border: 1.5px dashed #A98200; border-radius: 5px; font-size: 16px; margin-bottom: 14px; }
+.bloqueo svg { flex: none; margin-top: 2px; }
+
+.volver { margin: 0 0 10px -6px; }
+.cabecera-sosp { display: grid; grid-template-columns: 64px 1fr; gap: 14px; align-items: center; margin-bottom: 14px; }
+.cabecera-sosp .sosp__cara { width: 64px; height: 64px; }
+
+.charla { display: grid; gap: 10px; margin: 12px 0; }
+.burbuja { max-width: 92%; padding: 10px 13px; border-radius: 4px 14px 14px 14px; border: 2px solid var(--tinta); background: #fff; }
+.burbuja--yo { justify-self: end; border-radius: 14px 4px 14px 14px; background: var(--tinta); color: #F3F7F5; }
+.burbuja b { display: block; font-family: var(--maquina); font-weight: 400; font-size: 15px; margin-bottom: 2px; opacity: .85; }
+.preguntas { display: grid; gap: 8px; }
+.preguntas .btn { justify-content: flex-start; text-align: left; font-weight: 400; }
+.preguntas .btn[disabled] { opacity: .5; }
+.preguntas .btn .hecha { margin-left: auto; color: var(--hospital-osc); font-weight: 700; }
+
+/* ---------------------------------------------------------------- acusar */
+.acusar-form { display: grid; gap: 4px; }
+.confesion { display: grid; gap: 14px; }
+.confesion p { font-family: var(--maquina); font-size: 18px; line-height: 1.5; }
+.confesion .aparece { opacity: 0; animation: aparece .9s ease forwards; }
+@keyframes aparece { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.cierre { margin-top: 18px; padding: 14px; background: #fff; border: 2px solid var(--corazon-osc); border-radius: 5px; font-weight: 700; }
+.titulo-resuelto { font-family: var(--maquina); font-size: 28px; line-height: 1.15; color: var(--corazon-osc); transform: rotate(-2deg); display: inline-block; border: 3px solid var(--corazon-osc); padding: 6px 12px 4px; border-radius: 6px; margin-bottom: 18px; }
+
+/* ---------------------------------------------------------------- autor, instalación */
+.autor { margin-top: 28px; border-top: 1.5px dashed var(--linea-fuerte); padding-top: 8px; }
+.autor summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; font-size: 15px; color: var(--tinta-suave); }
+.autor .fila-btn { margin-top: 4px; }
+
+/* ---------------------------------------------------------------- barra inferior */
+.barra {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+  background: var(--hoja); border-top: 2px solid var(--tinta);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.barra__fila { max-width: var(--ancho); margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); }
+.barra button {
+  position: relative; min-height: var(--alto-barra); padding: 8px 2px 6px;
+  display: grid; justify-items: center; align-content: center; gap: 3px;
+  background: transparent; border: 0; color: var(--tinta-suave); font-size: 12px; line-height: 1.1; font-weight: 700;
+}
+.barra button svg { width: 25px; height: 25px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.barra button[aria-current="page"] { color: var(--tinta); }
+.barra button[aria-current="page"]::before { content: ""; position: absolute; left: 22%; right: 22%; top: -2px; height: 4px; background: var(--corazon); border-radius: 0 0 3px 3px; }
+.barra button[aria-current="page"] svg { stroke-width: 2.4; }
+.barra .punto { position: absolute; top: 8px; left: calc(50% + 9px); width: 9px; height: 9px; border-radius: 50%; background: var(--corazon); border: 2px solid var(--hoja); }
+
+/* ---------------------------------------------------------------- modal y placa */
+.modal {
+  width: min(92vw, 420px); padding: 0; border: 2px solid var(--tinta); border-radius: 6px; background: var(--hoja); color: var(--tinta);
+}
+.modal::backdrop { background: rgba(20, 28, 64, .6); }
+.modal form { padding: 18px 18px 16px; }
+.modal h2 { font-family: var(--maquina); font-weight: 400; font-size: 22px; margin-bottom: 6px; }
+.modal .fila-btn { justify-content: flex-end; }
+.modal .mensaje { min-height: 1.4em; }
+
+.placa { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 18px; background: var(--tinta); overflow: auto; }
+.placa[hidden] { display: none; }
+.placa__ficha { width: min(100%, 420px); background: var(--hoja); color: var(--tinta); border: 2px solid var(--marcador); border-radius: 6px; padding: 24px 20px 22px; display: grid; gap: 4px; }
+.placa__membrete { font-family: var(--maquina); font-size: 15px; color: var(--hospital-osc); }
+.placa__titulo { font-family: var(--maquina); font-weight: 400; font-size: 30px; line-height: 1.1; }
+.placa__texto { margin: 6px 0 4px; }
+.placa .btn { margin-top: 16px; }
+
+/* ---------------------------------------------------------------- escritorio */
+@media (min-width: 900px) {
+  :root { --ancho: 760px; }
+  body { font-size: 18px; }
+  .monitor__caso { font-size: 32px; }
+  .plano { grid-template-columns: repeat(3, 1fr); }
+  .barra__fila { border-left: 1px solid var(--linea); border-right: 1px solid var(--linea); }
+  .barra button { font-size: 14px; flex-direction: row; }
+  .g { width: 40px; }
+  .g .glifo { width: 34px; height: 34px; }
+}
+@media (max-width: 359px) {
+  .barra button { font-size: 11px; }
+  .g { width: 32px; }
+}
+
+/* ---------------------------------------------------------------- movimiento reducido */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; animation-iteration-count: 1 !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+  .ecg svg { animation: none; }
+  .ecg.fuerte { transform: none; }
+  .confesion .aparece { opacity: 1; animation: none; }
+}

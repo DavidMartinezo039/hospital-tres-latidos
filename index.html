@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Caso Inimă</title>
+  <meta name="description" content="Expediente del caso: un corazón ha desaparecido del Hospital Tres Latidos.">
+  <meta name="theme-color" content="#1D2A5B">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Caso Inimă">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/png" href="iconos/icono-192.png">
+  <link rel="apple-touch-icon" href="iconos/apple-touch-icon.png">
+  <link rel="stylesheet" href="estilos.css">
+</head>
+<body>
+  <a class="saltar" href="#pantalla">Saltar al contenido</a>
+
+  <header class="monitor" id="monitor">
+    <div class="monitor__fila">
+      <div class="monitor__titulo">
+        <span class="monitor__hospital" id="hospital">Hospital Tres Latidos</span>
+        <h1 class="monitor__caso">Caso Inimă</h1>
+      </div>
+      <p class="monitor__cuenta" id="cuenta" aria-live="polite"></p>
+    </div>
+    <div class="ecg" id="ecg" aria-hidden="true"></div>
+  </header>
+
+  <main id="pantalla" tabindex="-1" aria-live="polite"></main>
+
+  <nav class="barra" id="barra" aria-label="Secciones del expediente"></nav>
+
+  <dialog id="modal" class="modal"></dialog>
+
+  <div class="placa" id="placa" hidden>
+    <form class="placa__ficha" id="formPlaca" autocomplete="off">
+      <p class="placa__membrete">Hospital Tres Latidos</p>
+      <h2 class="placa__titulo">Placa de detective</h2>
+      <p class="placa__texto">Antes de abrir el expediente, identifícate. Tu nombre quedará en la placa durante todo el caso.</p>
+      <label class="campo" for="nombreDetective">¿Cómo te llamas, detective?</label>
+      <input id="nombreDetective" name="nombre" type="text" maxlength="24" required autocomplete="off" autocapitalize="words" enterkeyhint="go">
+      <button type="submit" class="btn btn--primario">Abrir el expediente</button>
+    </form>
+  </div>
+
+  <script src="simbolos.js"></script>
+  <script src="cripto.js"></script>
+  <script src="datos.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
